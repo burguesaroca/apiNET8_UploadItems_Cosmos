@@ -1,0 +1,112 @@
+[
+  {
+    "id": "d0eee394-8d5f-49ea-a67a-93d096179a3a",
+    "clientId": "CL001",
+    "clientName": "MAXPOINT_LEGACY",
+    "servidor": "192.168.1.50\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "U//nyerpWp+rFQT2IV2gQQ==",
+    "repository": "MYDB",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "clientId": "CL002",
+    "clientName": "CLIENT_ALPHA",
+    "servidor": "192.168.1.51\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "aB12cD34eF56gH78==",
+    "repository": "CLIENTDB_ALPHA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "f1e2d3c4-b5a6-9876-5432-abcdef123456",
+    "clientId": "CL003",
+    "clientName": "CLIENT_BETA",
+    "servidor": "192.168.1.52\\sqlexpress",
+    "puerto": "1433",
+    "user": "dbadmin",
+    "password": "xY98zW76vU54tS32==",
+    "repository": "CLIENTDB_BETA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "12345678-abcd-ef01-2345-6789abcdef01",
+    "clientId": "CL004",
+    "clientName": "CLIENT_GAMMA",
+    "servidor": "192.168.1.53\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "qW23eR45tY67uI89==",
+    "repository": "CLIENTDB_GAMMA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "98765432-1234-5678-90ab-cdef01234567",
+    "clientId": "CL005",
+    "clientName": "CLIENT_DELTA",
+    "servidor": "192.168.1.54\\sqlexpress",
+    "puerto": "1433",
+    "user": "sysadmin",
+    "password": "oP12iU34yT56rE78==",
+    "repository": "CLIENTDB_DELTA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "abcdef01-2345-6789-abcd-ef0123456789",
+    "clientId": "CL006",
+    "clientName": "CLIENT_EPSILON",
+    "servidor": "192.168.1.55\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "lK90jH78gF56dS34==",
+    "repository": "CLIENTDB_EPSILON",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "fedcba09-8765-4321-0fed-cba098765432",
+    "clientId": "CL007",
+    "clientName": "CLIENT_ZETA",
+    "servidor": "192.168.1.56\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "mN12bV34cX56zL78==",
+    "repository": "CLIENTDB_ZETA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "01234567-89ab-cdef-0123-456789abcdef",
+    "clientId": "CL008",
+    "clientName": "CLIENT_ETA",
+    "servidor": "192.168.1.57\\sqlexpress",
+    "puerto": "1433",
+    "user": "dbuser",
+    "password": "aS12dF34gH56jK78==",
+    "repository": "CLIENTDB_ETA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "456789ab-cdef-0123-4567-89abcdef0123",
+    "clientId": "CL009",
+    "clientName": "CLIENT_THETA",
+    "servidor": "192.168.1.58\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "qW34eR56tY78uI90==",
+    "repository": "CLIENTDB_THETA",
+    "adapter": "SqlServerSP"
+  },
+  {
+    "id": "89abcdef-0123-4567-89ab-cdef01234567",
+    "clientId": "CL010",
+    "clientName": "CLIENT_IOTA",
+    "servidor": "192.168.1.59\\sqlexpress",
+    "puerto": "1433",
+    "user": "admin",
+    "password": "zX12cV34bN56mL78==",
+    "repository": "CLIENTDB_IOTA",
+    "adapter": "SqlServerSP"
+  }
+]

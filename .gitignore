@@ -1,0 +1,79 @@
+# .gitignore for a .NET project (Visual Studio / VS Code)
+
+# Build folders
+/bin/
+/obj/
+/out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Core
+# Keep appsettings.json in repo, but ignore local overrides
+appsettings.*.Local.json
+secrets.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.bak
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dotnet publish output
+/publish/
+/publish/**
+
+# Database files
+*.mdf
+*.ldf
+*.db
+*.db-shm
+*.db-wal
+
+# IIS Express
+\.vs\**\applicationhost.config
+
+# JetBrains Rider cache
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+
+# Exclude the build outputs for other frameworks (if any left from old builds)
+/bin/**/net6.0/
+/bin/**/net7.0/
+/obj/**/net6.0/
+/obj/**/net7.0/
+
+# Ignore user-specific local settings
+*.local
+
+# Keep this file tracked
+!/.gitignore
