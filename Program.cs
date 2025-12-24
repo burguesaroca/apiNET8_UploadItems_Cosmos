@@ -2,6 +2,8 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace UploadItemsCosmos;
 
@@ -48,24 +50,11 @@ class Program
             Console.WriteLine($"Connected to Cosmos DB: {databaseName}/{containerName} (Couldn't read container metadata: {ex.Message})\n");
         }
 
-        // Read connections from JSON file
-        var jsonFilePath = "connections.json";
-        if (!File.Exists(jsonFilePath))
-        {
-            Console.WriteLine($"Error: File '{jsonFilePath}' not found.");
-            return;
-        }
-
-        var jsonContent = await File.ReadAllTextAsync(jsonFilePath);
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
-        var connections = JsonSerializer.Deserialize<List<Connection>>(jsonContent, jsonOptions);
-
+        // Load connections: try SQL (if configured) otherwise read from JSON
+        var connections = await LoadConnectionsAsync(configuration);
         if (connections == null || connections.Count == 0)
         {
-            Console.WriteLine("No connections found in JSON file.");
+            Console.WriteLine("No connections found to upload.");
             return;
         }
 
@@ -127,6 +116,89 @@ class Program
         Console.WriteLine($"Success: {successCount}");
         Console.WriteLine($"Errors: {errorCount}");
         Console.WriteLine($"Total: {connections.Count}");
+    }
+
+    static async Task<List<Connection>> LoadConnectionsAsync(IConfiguration configuration)
+    {
+        var jsonFilePath = "connections.json";
+
+        var sqlConnectionString = configuration["SqlServer:ConnectionString"];
+        var sqlQuery = configuration["SqlServer:Query"] ?? "SELECT id, clientId, clientName, servidor, puerto, [user], password, repository, adapter FROM Clients";
+
+        if (!string.IsNullOrWhiteSpace(sqlConnectionString))
+        {
+            try
+            {
+                var results = new List<Connection>();
+                await using var conn = new SqlConnection(sqlConnectionString);
+                await conn.OpenAsync();
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.CommandType = CommandType.Text;
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    string GetStringSafe(string name)
+                    {
+                        try
+                        {
+                            var ordinal = reader.GetOrdinal(name);
+                            if (reader.IsDBNull(ordinal)) return string.Empty;
+                            return reader.GetValue(ordinal)?.ToString() ?? string.Empty;
+                        }
+                        catch
+                        {
+                            return string.Empty;
+                        }
+                    }
+
+                    var connItem = new Connection
+                    {
+                        id = string.IsNullOrWhiteSpace(GetStringSafe("id")) ? Guid.NewGuid().ToString() : GetStringSafe("id"),
+                        ClientId = GetStringSafe("clientId"),
+                        ClientName = GetStringSafe("clientName"),
+                        Servidor = GetStringSafe("servidor"),
+                        Puerto = GetStringSafe("puerto"),
+                        User = GetStringSafe("user"),
+                        Password = GetStringSafe("password"),
+                        Repository = GetStringSafe("repository"),
+                        Adapter = GetStringSafe("adapter")
+                    };
+
+                    results.Add(connItem);
+                }
+
+                if (results.Count > 0)
+                {
+                    var writeOptions = new JsonSerializerOptions { WriteIndented = true };
+                    await File.WriteAllTextAsync(jsonFilePath, JsonSerializer.Serialize(results, writeOptions));
+                    Console.WriteLine($"Generated '{jsonFilePath}' from SQL query (rows: {results.Count}).");
+                }
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error querying SQL Server: {ex.Message}");
+                Console.WriteLine("Falling back to reading existing connections.json (if present).");
+            }
+        }
+
+        // Fallback: read from connections.json file
+        if (!File.Exists(jsonFilePath))
+        {
+            Console.WriteLine($"Error: File '{jsonFilePath}' not found and no SQL configuration provided.");
+            return new List<Connection>();
+        }
+
+        var jsonContent = await File.ReadAllTextAsync(jsonFilePath);
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        var connections = JsonSerializer.Deserialize<List<Connection>>(jsonContent, jsonOptions) ?? new List<Connection>();
+        return connections;
     }
 }
 
