@@ -188,97 +188,84 @@ class Program
 
     static async Task<List<Connection>> LoadConnectionsAsync(IConfiguration configuration)
     {
-        var jsonFilePath = "connections.json";
-
         var sqlConnectionString = configuration["SqlServer:ConnectionString"];
         var sqlQuery = configuration["SqlServer:Query"] ?? "SELECT id, clientId, clientName, servidor, puerto, [user], password, repository, adapter FROM Clients";
 
-        if (!string.IsNullOrWhiteSpace(sqlConnectionString))
+        if (string.IsNullOrWhiteSpace(sqlConnectionString))
         {
-            try
-            {
-                var sb = new SqlConnectionStringBuilder(sqlConnectionString);
-                Console.WriteLine($"SQL config detected. DataSource: {sb.DataSource}, InitialCatalog: {sb.InitialCatalog}, UserID: {sb.UserID}");
-            }
-            catch
-            {
-                Console.WriteLine("SQL config detected but couldn't parse connection string (will attempt to use it as-is).");
-            }
-
-            Console.WriteLine("Attempting to query SQL Server for connections...");
-            try
-            {
-                var results = new List<Connection>();
-                await using var conn = new SqlConnection(sqlConnectionString);
-                await conn.OpenAsync();
-                Console.WriteLine("SQL connection opened successfully.");
-                await using var cmd = conn.CreateCommand();
-                cmd.CommandText = sqlQuery;
-                cmd.CommandType = CommandType.Text;
-
-                await using var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    string GetStringSafe(string name)
-                    {
-                        try
-                        {
-                            var ordinal = reader.GetOrdinal(name);
-                            if (reader.IsDBNull(ordinal)) return string.Empty;
-                            return reader.GetValue(ordinal)?.ToString() ?? string.Empty;
-                        }
-                        catch
-                        {
-                            return string.Empty;
-                        }
-                    }
-
-                    var connItem = new Connection
-                    {
-                        id = string.IsNullOrWhiteSpace(GetStringSafe("id")) ? Guid.NewGuid().ToString() : GetStringSafe("id"),
-                        ClientId = GetStringSafe("clientId"),
-                        ClientName = GetStringSafe("clientName"),
-                        Servidor = GetStringSafe("servidor"),
-                        Puerto = GetStringSafe("puerto"),
-                        User = GetStringSafe("user"),
-                        Password = GetStringSafe("password"),
-                        Repository = GetStringSafe("repository"),
-                        Adapter = GetStringSafe("adapter")
-                    };
-
-                    results.Add(connItem);
-                }
-
-                if (results.Count > 0)
-                {
-                    var writeOptions = new JsonSerializerOptions { WriteIndented = true };
-                    await File.WriteAllTextAsync(jsonFilePath, JsonSerializer.Serialize(results, writeOptions));
-                    Console.WriteLine($"Generated '{jsonFilePath}' from SQL query (rows: {results.Count}).");
-                }
-
-                return results;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error querying SQL Server: {ex.Message}");
-                Console.WriteLine("Falling back to reading existing connections.json (if present).");
-            }
-        }
-
-        // Fallback: read from connections.json file
-        if (!File.Exists(jsonFilePath))
-        {
-            Console.WriteLine($"Error: File '{jsonFilePath}' not found and no SQL configuration provided.");
+            Console.WriteLine("Error: SqlServer:ConnectionString is not configured. No fallback to connections.json is allowed.");
             return new List<Connection>();
         }
 
-        var jsonContent = await File.ReadAllTextAsync(jsonFilePath);
-        var jsonOptions = new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true
-        };
-        var connections = JsonSerializer.Deserialize<List<Connection>>(jsonContent, jsonOptions) ?? new List<Connection>();
-        return connections;
+            var sb = new SqlConnectionStringBuilder(sqlConnectionString);
+            Console.WriteLine($"SQL config detected. DataSource: {sb.DataSource}, InitialCatalog: {sb.InitialCatalog}, UserID: {sb.UserID}");
+        }
+        catch
+        {
+            Console.WriteLine("SQL config detected but couldn't parse connection string (will attempt to use it as-is).");
+        }
+
+        Console.WriteLine("Attempting to query SQL Server for connections...");
+        try
+        {
+            var results = new List<Connection>();
+            await using var conn = new SqlConnection(sqlConnectionString);
+            await conn.OpenAsync();
+            Console.WriteLine("SQL connection opened successfully.");
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+            cmd.CommandType = CommandType.Text;
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                string GetStringSafe(string name)
+                {
+                    try
+                    {
+                        var ordinal = reader.GetOrdinal(name);
+                        if (reader.IsDBNull(ordinal)) return string.Empty;
+                        return reader.GetValue(ordinal)?.ToString() ?? string.Empty;
+                    }
+                    catch
+                    {
+                        return string.Empty;
+                    }
+                }
+
+                var connItem = new Connection
+                {
+                    id = string.IsNullOrWhiteSpace(GetStringSafe("id")) ? Guid.NewGuid().ToString() : GetStringSafe("id"),
+                    ClientId = GetStringSafe("clientId"),
+                    ClientName = GetStringSafe("clientName"),
+                    Servidor = GetStringSafe("servidor"),
+                    Puerto = GetStringSafe("puerto"),
+                    User = GetStringSafe("user"),
+                    Password = GetStringSafe("password"),
+                    Repository = GetStringSafe("repository"),
+                    Adapter = GetStringSafe("adapter")
+                };
+
+                results.Add(connItem);
+            }
+
+            if (results.Count > 0)
+            {
+                var writeOptions = new JsonSerializerOptions { WriteIndented = true };
+                await File.WriteAllTextAsync("connections.json", JsonSerializer.Serialize(results, writeOptions));
+                Console.WriteLine($"Generated 'connections.json' from SQL query (rows: {results.Count}).");
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error querying SQL Server: {ex.Message}");
+            Console.WriteLine("No fallback to connections.json is configured; aborting.");
+            return new List<Connection>();
+        }
     }
 }
 
