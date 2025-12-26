@@ -129,9 +129,21 @@ class Program
         {
             try
             {
+                var sb = new SqlConnectionStringBuilder(sqlConnectionString);
+                Console.WriteLine($"SQL config detected. DataSource: {sb.DataSource}, InitialCatalog: {sb.InitialCatalog}, UserID: {sb.UserID}");
+            }
+            catch
+            {
+                Console.WriteLine("SQL config detected but couldn't parse connection string (will attempt to use it as-is).");
+            }
+
+            Console.WriteLine("Attempting to query SQL Server for connections...");
+            try
+            {
                 var results = new List<Connection>();
                 await using var conn = new SqlConnection(sqlConnectionString);
                 await conn.OpenAsync();
+                Console.WriteLine("SQL connection opened successfully.");
                 await using var cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
                 cmd.CommandType = CommandType.Text;

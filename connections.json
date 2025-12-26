@@ -13,7 +13,7 @@
   {
     "id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
     "clientId": "CL002",
-    "clientName": "CLIENT_ALPHA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.51\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
@@ -24,7 +24,7 @@
   {
     "id": "f1e2d3c4-b5a6-9876-5432-abcdef123456",
     "clientId": "CL003",
-    "clientName": "CLIENT_BETA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.52\\sqlexpress",
     "puerto": "1433",
     "user": "dbadmin",
@@ -35,7 +35,7 @@
   {
     "id": "12345678-abcd-ef01-2345-6789abcdef01",
     "clientId": "CL004",
-    "clientName": "CLIENT_GAMMA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.53\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
@@ -46,7 +46,7 @@
   {
     "id": "98765432-1234-5678-90ab-cdef01234567",
     "clientId": "CL005",
-    "clientName": "CLIENT_DELTA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.54\\sqlexpress",
     "puerto": "1433",
     "user": "sysadmin",
@@ -57,7 +57,7 @@
   {
     "id": "abcdef01-2345-6789-abcd-ef0123456789",
     "clientId": "CL006",
-    "clientName": "CLIENT_EPSILON",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.55\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
@@ -68,7 +68,7 @@
   {
     "id": "fedcba09-8765-4321-0fed-cba098765432",
     "clientId": "CL007",
-    "clientName": "CLIENT_ZETA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.56\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
@@ -79,7 +79,7 @@
   {
     "id": "01234567-89ab-cdef-0123-456789abcdef",
     "clientId": "CL008",
-    "clientName": "CLIENT_ETA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.57\\sqlexpress",
     "puerto": "1433",
     "user": "dbuser",
@@ -90,7 +90,7 @@
   {
     "id": "456789ab-cdef-0123-4567-89abcdef0123",
     "clientId": "CL009",
-    "clientName": "CLIENT_THETA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.58\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
@@ -101,7 +101,7 @@
   {
     "id": "89abcdef-0123-4567-89ab-cdef01234567",
     "clientId": "CL010",
-    "clientName": "CLIENT_IOTA",
+    "clientName": "MAXPOINT_LEGACY",
     "servidor": "192.168.1.59\\sqlexpress",
     "puerto": "1433",
     "user": "admin",
