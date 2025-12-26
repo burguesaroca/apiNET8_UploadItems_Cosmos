@@ -60,6 +60,74 @@ class Program
 
         Console.WriteLine($"Found {connections.Count} connections to upload.\n");
 
+        // Clear existing items in the container before uploading new ones
+        Console.WriteLine("Clearing existing items in container before upload...");
+            try
+            {
+                string pkPathQuery = containerPartitionKeyPath?.TrimStart('/') ?? string.Empty;
+                if (string.IsNullOrEmpty(pkPathQuery))
+                {
+                    Console.WriteLine("Container has no partition key path; skipping delete-all step.");
+                }
+                else
+                {
+                    // Use an alias for the partition key in the SELECT to avoid duplicate property names
+                    var pkAlias = "__pk";
+                    var query = new QueryDefinition($"SELECT c.id, c.{pkPathQuery} AS {pkAlias} FROM c");
+                    int deleted = 0;
+                    var toDelete = new List<(string id, string pk)>();
+
+                    // Deserialize query results into a lightweight POCO to avoid JsonElement raw-text issues
+                    using var feed = container.GetItemQueryIterator<ItemIdPk>(query);
+                    while (feed.HasMoreResults)
+                    {
+                        var resp = await feed.ReadNextAsync();
+                        foreach (var el in resp)
+                        {
+                            try
+                            {
+                                var id = el?.id ?? string.Empty;
+                                var pk = el?.__pk ?? string.Empty;
+
+                                if (string.IsNullOrEmpty(id)) continue;
+                                if (string.IsNullOrEmpty(pk))
+                                {
+                                    Console.WriteLine($"Skipping delete for id='{id}' because partition key value is empty.");
+                                    continue;
+                                }
+
+                                toDelete.Add((id, pk));
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Warning inspecting item (deserialized): {ex}");
+                            }
+                        }
+                    }
+
+                    // Perform deletes after finishing iteration to avoid invalid iterator state
+                    foreach (var item in toDelete)
+                    {
+                        try
+                        {
+                            Console.WriteLine($"Deleting item id='{item.id}', pk='{item.pk}'...");
+                            await container.DeleteItemAsync<JsonElement>(item.id, new PartitionKey(item.pk));
+                            deleted++;
+                        }
+                        catch (Exception exDel)
+                        {
+                            Console.WriteLine($"Warning deleting item id='{item.id}', pk='{item.pk}': {exDel.Message}");
+                        }
+                    }
+
+                    Console.WriteLine($"Deleted {deleted} existing items from container.");
+                }
+            }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error clearing container: {ex.Message}");
+        }
+
         // Upload each connection
         int successCount = 0;
         int errorCount = 0;
@@ -249,4 +317,10 @@ public class Connection
     [JsonPropertyName("adapter")]
     [Newtonsoft.Json.JsonProperty("adapter")]
     public string Adapter { get; set; } = string.Empty;
+}
+
+public class ItemIdPk
+{
+    public string id { get; set; } = string.Empty;
+    public string __pk { get; set; } = string.Empty;
 }
