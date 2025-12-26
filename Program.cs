@@ -189,7 +189,15 @@ class Program
     static async Task<List<Connection>> LoadConnectionsAsync(IConfiguration configuration)
     {
         var sqlConnectionString = configuration["SqlServer:ConnectionString"];
-        var sqlQuery = configuration["SqlServer:Query"] ?? "SELECT id, clientId, clientName, servidor, puerto, [user], password, repository, adapter FROM Clients";
+        // Query only the fields that should come from SQL
+        var sqlQuery = configuration["SqlServer:Query"] ?? "SELECT clientId, servidor, [user], password, repository FROM Clients";
+
+        // Load shared defaults from appsettings.json (optional). Expected structure:
+        // "ConnectionsDefaults": { "clientName": "...", "puerto": "1433", "adapter": "SqlServerSP" }
+        var defaultsSection = configuration.GetSection("ConnectionsDefaults");
+        var globalClientName = defaultsSection["clientName"] ?? string.Empty;
+        var globalPuerto = defaultsSection["puerto"] ?? string.Empty;
+        var globalAdapter = defaultsSection["adapter"] ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(sqlConnectionString))
         {
@@ -219,7 +227,7 @@ class Program
             cmd.CommandType = CommandType.Text;
 
             await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+                while (await reader.ReadAsync())
             {
                 string GetStringSafe(string name)
                 {
@@ -234,21 +242,27 @@ class Program
                         return string.Empty;
                     }
                 }
+                    var clientId = GetStringSafe("clientId");
+                    var servidor = GetStringSafe("servidor");
+                    var user = GetStringSafe("user");
+                    var password = GetStringSafe("password");
+                    var repository = GetStringSafe("repository");
 
-                var connItem = new Connection
-                {
-                    id = string.IsNullOrWhiteSpace(GetStringSafe("id")) ? Guid.NewGuid().ToString() : GetStringSafe("id"),
-                    ClientId = GetStringSafe("clientId"),
-                    ClientName = GetStringSafe("clientName"),
-                    Servidor = GetStringSafe("servidor"),
-                    Puerto = GetStringSafe("puerto"),
-                    User = GetStringSafe("user"),
-                    Password = GetStringSafe("password"),
-                    Repository = GetStringSafe("repository"),
-                    Adapter = GetStringSafe("adapter")
-                };
 
-                results.Add(connItem);
+                    var connItem = new Connection
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        ClientId = clientId,
+                        ClientName = globalClientName,
+                        Servidor = servidor,
+                        Puerto = globalPuerto,
+                        User = user,
+                        Password = password,
+                        Repository = repository,
+                        Adapter = globalAdapter
+                    };
+
+                    results.Add(connItem);
             }
 
             if (results.Count > 0)
@@ -310,4 +324,13 @@ public class ItemIdPk
 {
     public string id { get; set; } = string.Empty;
     public string __pk { get; set; } = string.Empty;
+}
+
+public class DefaultConnection
+{
+    public string id { get; set; } = string.Empty;
+    public string clientId { get; set; } = string.Empty;
+    public string clientName { get; set; } = string.Empty;
+    public string puerto { get; set; } = string.Empty;
+    public string adapter { get; set; } = string.Empty;
 }
