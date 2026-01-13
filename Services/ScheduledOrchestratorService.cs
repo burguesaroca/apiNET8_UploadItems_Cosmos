@@ -111,18 +111,6 @@ public class ScheduledOrchestratorService : BackgroundService
             }
         }
 
-        // Optional test-on-start: acquire token immediately and log full response
-        var testOnStartRaw = _configuration["SchedulerOrchestrator:TestOnStart"] ?? "false";
-        var testOnStart = false;
-        if (!bool.TryParse(testOnStartRaw, out testOnStart)) testOnStart = false;
-        if (testOnStart)
-        {
-            _logger.LogInformation("SchedulerOrchestrator:TestOnStart=true — attempting token request now.");
-            var (tType, tkn, raw) = await AcquireTokenAsync(stoppingToken);
-            if (!string.IsNullOrEmpty(raw)) _logger.LogInformation("Token endpoint raw response: {resp}", raw);
-            if (!string.IsNullOrEmpty(tkn)) _logger.LogInformation("Parsed tokenType: {type}, token: {token}", tType ?? "(null)", tkn);
-            else _logger.LogWarning("Token could not be parsed from response.");
-        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
