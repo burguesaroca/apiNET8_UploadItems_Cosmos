@@ -2,11 +2,11 @@
     "client": "MAXPOINT_LEGACY",
     "origins": [
         {
-            "servidor": "192.168.101.42\\sqlexpress",
+            "servidor": "10.103.4.20",
             "puerto": "1433",
-            "user": "sa",
-            "password": "jcjajplae*88",
-            "repository": "MAXPOINT_K163",
+            "user": "sis_despliegue",
+            "password": "81Nb1852g7@YP3t",
+            "repository": "MAXPOINT_T004",
             "adapter": "SqlServerSP"
         }
     ],
@@ -23,7 +23,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         },
@@ -39,7 +39,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         },
@@ -55,7 +55,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         },
@@ -71,7 +71,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         },
@@ -87,7 +87,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         },
@@ -103,7 +103,7 @@
                 {
                     "name": "idPeriodo",
                     "operator": "equals",
-                    "value": "2025-08-31"
+                    "value": "{{fechaPeriodo}}"
                 }
             ]
         }

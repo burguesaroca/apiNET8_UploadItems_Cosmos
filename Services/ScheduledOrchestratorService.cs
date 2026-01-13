@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 namespace UploadItemsCosmos.Services;
@@ -135,9 +136,6 @@ public class ScheduledOrchestratorService : BackgroundService
 
                 _logger.LogInformation("Starting orchestrator POST at {time}.", DateTime.Now);
 
-                // Acquire token
-                var (tokenType, token, _) = await AcquireTokenAsync(stoppingToken);
-
                 // Prepare orchestrator body
                 string bodyJson = "{}";
 
@@ -181,6 +179,32 @@ public class ScheduledOrchestratorService : BackgroundService
                         if (!string.IsNullOrEmpty(raw)) bodyJson = raw;
                     }
                 }
+
+                // Replace '{{fechaPeriodo}}' and any YYYY-MM-DD placeholders with (scheduled day - 1)
+                try
+                {
+                    var yesterdayStr = candidate.Date.AddDays(-1).ToString("yyyy-MM-dd");
+                    bodyJson = bodyJson.Replace("{{fechaPeriodo}}", yesterdayStr);
+                    var dateRegex = new Regex(@"\b\d{4}-\d{2}-\d{2}\b");
+                    bodyJson = dateRegex.Replace(bodyJson, yesterdayStr);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to replace date placeholders in orchestrator body.");
+                }
+
+                // Log the final payload that will be sent to the orchestrator
+                try
+                {
+                    _logger.LogInformation("Orchestrator payload: {payload}", bodyJson);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to log orchestrator payload.");
+                }
+
+                // Acquire token (after body prepared)
+                var (tokenType, token, _) = await AcquireTokenAsync(stoppingToken);
 
                 // Call orchestrator endpoint
                 try
