@@ -6,7 +6,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 namespace UploadItemsCosmos.Services;
@@ -180,13 +179,11 @@ public class ScheduledOrchestratorService : BackgroundService
                     }
                 }
 
-                // Replace '{{fechaPeriodo}}' and any YYYY-MM-DD placeholders with (scheduled day - 1)
+                // Replace '{{fechaPeriodo}}' with (scheduled day - 1)
                 try
                 {
                     var yesterdayStr = candidate.Date.AddDays(-1).ToString("yyyy-MM-dd");
                     bodyJson = bodyJson.Replace("{{fechaPeriodo}}", yesterdayStr);
-                    var dateRegex = new Regex(@"\b\d{4}-\d{2}-\d{2}\b");
-                    bodyJson = dateRegex.Replace(bodyJson, yesterdayStr);
                 }
                 catch (Exception ex)
                 {
