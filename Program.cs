@@ -24,6 +24,8 @@ class Program
             {
                 services.AddSingleton<UploadRunner>();
                 services.AddHostedService<Services.ScheduledUploadService>();
+                services.AddHttpClient("orchestrator");
+                services.AddHostedService<Services.ScheduledOrchestratorService>();
             })
             .ConfigureLogging((ctx, logging) =>
             {
