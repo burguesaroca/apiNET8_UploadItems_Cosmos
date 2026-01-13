@@ -1,0 +1,136 @@
+{
+    "client": "MAXPOINT_LEGACY",
+    "origins": [
+        {
+            "servidor": "192.168.101.42\\sqlexpress",
+            "puerto": "1433",
+            "user": "sa",
+            "password": "jcjajplae*88",
+            "repository": "MAXPOINT_K163",
+            "adapter": "SqlServerSP"
+        }
+    ],
+    "entities": [
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "sales"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        },
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "companyTax"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        },
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "invoice"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        },
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "credit"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        },
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "pubDevice"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        },
+        {
+            "name": "dbo.usp_GetSalesData",
+            "properties": [],
+            "filters": [
+                {
+                    "name": "action",
+                    "operator": "equals",
+                    "value": "promotions"
+                },
+                {
+                    "name": "idPeriodo",
+                    "operator": "equals",
+                    "value": "2025-08-31"
+                }
+            ]
+        }
+    ],
+    "transformation": {
+        "code": "T010",
+        "country": "ECU",
+        "filter": [],
+        "properties": []
+    },
+    "target": {
+        "connection": {
+            "server": "https://ecsalakehouse.blob.core.windows.net/ecu-landing-mxp",
+            "port": "",
+            "user": "",
+            "password": "",
+            "repository": "",
+            "adapter": "blobStorage",
+            "sasToken": "?si=landing_mxp&spr=https&sv=2024-11-04&sr=c&sig=zVM1vlgPZ0fH7GZ7HgvPIv%2BXvqnioF42snjqTWqVVRw%3D"
+        },
+        "entities": [
+            {
+                "name": "transactions",
+                "toName": "",
+                "format": "json",
+                "properties": []
+            }
+        ]
+    }
+}

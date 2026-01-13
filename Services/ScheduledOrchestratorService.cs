@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.IO;
 using System.Collections.Generic;
 
 namespace UploadItemsCosmos.Services;
@@ -57,6 +58,72 @@ public class ScheduledOrchestratorService : BackgroundService
 
         _logger.LogInformation("SchedulerOrchestrator — daily at {time} ({tz}). BaseUrl: {base}", dailyTime, tzInfo.Id, baseUrl);
 
+        // Helper to acquire token and return raw response and parsed token
+        async Task<(string? tokenType, string? token, string raw)> AcquireTokenAsync(CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(tokenEndpoint)) return (null, null, string.Empty);
+
+            try
+            {
+                var client = _httpFactory.CreateClient("orchestrator");
+                client.BaseAddress = new Uri(baseUrl);
+
+                var tokenUri = tokenEndpoint.StartsWith("/") ? tokenEndpoint : "/" + tokenEndpoint;
+                var tokenReq = new HttpRequestMessage(HttpMethod.Post, tokenUri);
+                var cred = new { name = tokenName, password = tokenPassword };
+                tokenReq.Content = new StringContent(JsonSerializer.Serialize(cred), Encoding.UTF8, "application/json");
+
+                var resp = await client.SendAsync(tokenReq, ct);
+                var respText = await resp.Content.ReadAsStringAsync(ct);
+                resp.EnsureSuccessStatusCode();
+
+                string? parsed = null;
+                string? parsedType = null;
+                try
+                {
+                    using var doc = JsonDocument.Parse(respText);
+                    var root = doc.RootElement;
+
+                    // Try structure with datos array: datos[0].accessToken and datos[0].tokenType
+                    if (root.TryGetProperty("datos", out var datos) && datos.ValueKind == JsonValueKind.Array && datos.GetArrayLength() > 0)
+                    {
+                        var first = datos[0];
+                        if (first.TryGetProperty("accessToken", out var at)) parsed = at.GetString();
+                        if (first.TryGetProperty("tokenType", out var tt)) parsedType = tt.GetString();
+                    }
+
+                    // Fallback to top-level properties
+                    if (parsed == null)
+                    {
+                        if (root.TryGetProperty("access_token", out var at2)) parsed = at2.GetString();
+                        else if (root.TryGetProperty("token", out var t2)) parsed = t2.GetString();
+                        else if (root.TryGetProperty("accessToken", out var t3)) parsed = t3.GetString();
+                    }
+                }
+                catch { }
+
+                return (parsedType, parsed, respText);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error acquiring token from {endpoint}.", tokenEndpoint);
+                return (null, null, ex.Message);
+            }
+        }
+
+        // Optional test-on-start: acquire token immediately and log full response
+        var testOnStartRaw = _configuration["SchedulerOrchestrator:TestOnStart"] ?? "false";
+        var testOnStart = false;
+        if (!bool.TryParse(testOnStartRaw, out testOnStart)) testOnStart = false;
+        if (testOnStart)
+        {
+            _logger.LogInformation("SchedulerOrchestrator:TestOnStart=true — attempting token request now.");
+            var (tType, tkn, raw) = await AcquireTokenAsync(stoppingToken);
+            if (!string.IsNullOrEmpty(raw)) _logger.LogInformation("Token endpoint raw response: {resp}", raw);
+            if (!string.IsNullOrEmpty(tkn)) _logger.LogInformation("Parsed tokenType: {type}, token: {token}", tType ?? "(null)", tkn);
+            else _logger.LogWarning("Token could not be parsed from response.");
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -81,60 +148,50 @@ public class ScheduledOrchestratorService : BackgroundService
                 _logger.LogInformation("Starting orchestrator POST at {time}.", DateTime.Now);
 
                 // Acquire token
-                string? token = null;
-                if (!string.IsNullOrEmpty(baseUrl) && !string.IsNullOrEmpty(tokenEndpoint))
+                var (tokenType, token, _) = await AcquireTokenAsync(stoppingToken);
+
+                // Prepare orchestrator body
+                string bodyJson = "{}";
+
+                // If a file path is provided, prefer reading the file content as raw JSON
+                var bodyFile = _configuration["SchedulerOrchestrator:OrchestratorBodyFile"];
+                if (!string.IsNullOrEmpty(bodyFile))
                 {
                     try
                     {
-                        var client = _httpFactory.CreateClient("orchestrator");
-                        client.BaseAddress = new Uri(baseUrl);
-
-                        var tokenUri = tokenEndpoint.StartsWith("/") ? tokenEndpoint : "/" + tokenEndpoint;
-                        var tokenReq = new HttpRequestMessage(HttpMethod.Post, tokenUri);
-                        var cred = new { name = tokenName, password = tokenPassword };
-                        tokenReq.Content = new StringContent(JsonSerializer.Serialize(cred), Encoding.UTF8, "application/json");
-
-                        var resp = await client.SendAsync(tokenReq, stoppingToken);
-                        resp.EnsureSuccessStatusCode();
-                        var respText = await resp.Content.ReadAsStringAsync(stoppingToken);
-                        try
+                        if (File.Exists(bodyFile))
                         {
-                            using var doc = JsonDocument.Parse(respText);
-                            if (doc.RootElement.TryGetProperty("access_token", out var at)) token = at.GetString();
-                            else if (doc.RootElement.TryGetProperty("token", out var t2)) token = t2.GetString();
-                            else if (doc.RootElement.TryGetProperty("accessToken", out var t3)) token = t3.GetString();
-                            else
-                            {
-                                token = doc.RootElement.GetRawText();
-                            }
+                            bodyJson = await File.ReadAllTextAsync(bodyFile, stoppingToken);
                         }
-                        catch
+                        else
                         {
-                            token = respText;
+                            _logger.LogWarning("Orchestrator body file '{file}' not found. Falling back to config section.", bodyFile);
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error acquiring token from {endpoint}.", tokenEndpoint);
+                        _logger.LogWarning(ex, "Could not read orchestrator body file '{file}'. Falling back to config section.", bodyFile);
                     }
                 }
-
-                // Prepare orchestrator body
-                string bodyJson = "{}";
-                var bodySection = _configuration.GetSection("SchedulerOrchestrator:OrchestratorBody");
-                if (bodySection.Exists())
+                
+                // If no file or file read failed, use configuration section or raw string
+                if (string.IsNullOrEmpty(bodyJson) || bodyJson == "{}")
                 {
-                    var dict = new Dictionary<string, object?>();
-                    foreach (var child in bodySection.GetChildren())
+                    var bodySection = _configuration.GetSection("SchedulerOrchestrator:OrchestratorBody");
+                    if (bodySection.Exists())
                     {
-                        dict[child.Key] = child.Value;
+                        var dict = new Dictionary<string, object?>();
+                        foreach (var child in bodySection.GetChildren())
+                        {
+                            dict[child.Key] = child.Value;
+                        }
+                        bodyJson = JsonSerializer.Serialize(dict);
                     }
-                    bodyJson = JsonSerializer.Serialize(dict);
-                }
-                else
-                {
-                    var raw = _configuration["SchedulerOrchestrator:OrchestratorBody"];
-                    if (!string.IsNullOrEmpty(raw)) bodyJson = raw;
+                    else
+                    {
+                        var raw = _configuration["SchedulerOrchestrator:OrchestratorBody"];
+                        if (!string.IsNullOrEmpty(raw)) bodyJson = raw;
+                    }
                 }
 
                 // Call orchestrator endpoint
@@ -148,7 +205,11 @@ public class ScheduledOrchestratorService : BackgroundService
                     {
                         Content = new StringContent(bodyJson, Encoding.UTF8, "application/json")
                     };
-                    if (!string.IsNullOrEmpty(token)) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim('"'));
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        var scheme = string.IsNullOrEmpty(tokenType) ? "Bearer" : tokenType;
+                        req.Headers.Authorization = new AuthenticationHeaderValue(scheme, token.Trim('"'));
+                    }
 
                     var resp2 = await client2.SendAsync(req, stoppingToken);
                     var respText2 = await resp2.Content.ReadAsStringAsync(stoppingToken);
