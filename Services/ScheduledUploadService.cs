@@ -21,14 +21,36 @@ public class ScheduledUploadService : BackgroundService
     {
         _logger.LogInformation("ScheduledUploadService started.");
 
-        // Read schedule from configuration (format: HH:mm). Default to 02:00 if missing.
-        var dailyTime = _configuration["Scheduler:DailyTime"] ?? "02:00";
+        // Read schedule from configuration (format: HH:mm). Default to 01:00 if missing.
+        var dailyTime = _configuration["SchedulerUploadConnections:DailyTime"] ?? "01:00";
 
         if (!TimeSpan.TryParse(dailyTime, out var scheduledTime))
         {
-            _logger.LogWarning("Invalid Scheduler:DailyTime value '{time}', using 02:00.", dailyTime);
-            scheduledTime = TimeSpan.FromHours(2);
+            _logger.LogWarning("Invalid SchedulerUploadConnections:DailyTime value '{time}', using 01:00.", dailyTime);
+            scheduledTime = TimeSpan.FromHours(1);
         }
+
+        // Read timezone. Default to America/Bogota
+        var tzId = _configuration["SchedulerUploadConnections:TimeZone"] ?? "America/Bogota";
+        TimeZoneInfo tzInfo;
+        try
+        {
+            if (string.Equals(tzId, "Local", StringComparison.OrdinalIgnoreCase))
+            {
+                tzInfo = TimeZoneInfo.Local;
+            }
+            else
+            {
+                tzInfo = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not resolve timezone '{tzId}', falling back to Local.", tzId);
+            tzInfo = TimeZoneInfo.Local;
+        }
+
+        _logger.LogInformation("SchedulerUploadConnections — daily at {time} ({tz}).", dailyTime, tzInfo.Id);
 
         // The service will only run at the configured daily time in Scheduler:DailyTime.
 
@@ -36,12 +58,18 @@ public class ScheduledUploadService : BackgroundService
         {
             try
             {
-                var now = DateTime.Now;
-                var next = new DateTime(now.Year, now.Month, now.Day, scheduledTime.Hours, scheduledTime.Minutes, 0);
-                if (next <= now) next = next.AddDays(1);
+                // Compute next occurrence in the configured timezone
+                var nowUtc = DateTime.UtcNow;
+                var nowInTz = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, tzInfo);
 
-                var delay = next - now;
-                _logger.LogInformation("Next upload scheduled at {next} (in {delay}).", next, delay);
+                var candidate = new DateTime(nowInTz.Year, nowInTz.Month, nowInTz.Day, scheduledTime.Hours, scheduledTime.Minutes, 0);
+                if (candidate <= nowInTz) candidate = candidate.AddDays(1);
+
+                var nextUtc = TimeZoneInfo.ConvertTimeToUtc(candidate, tzInfo);
+                var delay = nextUtc - nowUtc;
+
+                var nextLocalDisplay = TimeZoneInfo.ConvertTimeFromUtc(nextUtc, TimeZoneInfo.Local);
+                _logger.LogInformation("Next upload scheduled at {nextLocal} (local) / {nextTz} ({tz}) — in {delay}.", nextLocalDisplay, candidate, tzInfo.Id, delay);
 
                 await Task.Delay(delay, stoppingToken);
 
