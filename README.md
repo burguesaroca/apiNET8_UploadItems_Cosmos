@@ -91,3 +91,43 @@ var response = await container.UpsertItemAsync(
 - Si un documento con el mismo `id` existe, será actualizado (upsert)
 - Los passwords están en formato encriptado/base64 como en tu ejemplo
 - La aplicación copia automáticamente los archivos JSON al directorio de salida
+
+## Docker
+
+El proyecto incluye un `Dockerfile` multi-stage para compilar y ejecutar la aplicación.
+
+- Construir la imagen:
+
+```powershell
+docker build -t apinet8-uploaditems-cosmos:latest .
+```
+
+- Ejecutar (por defecto mapea el puerto interno 5008):
+
+```powershell
+docker run --rm -p 5008:5008 apinet8-uploaditems-cosmos:latest
+```
+
+- Sobrescribir el puerto con variable de entorno:
+
+```powershell
+# Usando ASPNETCORE_URLS
+docker run --rm -p 5010:5010 -e ASPNETCORE_URLS=http://+:5010 apinet8-uploaditems-cosmos:latest
+
+# O usando WEB_PORT (fallback del host si no se establece ASPNETCORE_URLS)
+docker run --rm -p 5011:5011 -e WEB_PORT=5011 apinet8-uploaditems-cosmos:latest
+```
+
+- Health check:
+
+```powershell
+curl http://localhost:5008/health
+```
+
+- Pasar `appsettings.json` o secretos por volumen o variables de entorno:
+
+```powershell
+docker run --rm -p 5008:5008 -v ${PWD}/appsettings.json:/app/appsettings.json apinet8-uploaditems-cosmos:latest
+```
+
+Nota: evita incluir credenciales sensibles en la imagen. Prefiere montarlas en tiempo de ejecución o usar un secrets manager.

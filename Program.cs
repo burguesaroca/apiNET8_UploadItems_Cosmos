@@ -7,6 +7,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 
 namespace UploadItemsCosmos;
 
@@ -15,6 +18,35 @@ class Program
     static async Task Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                // Determine URLs/port from environment variables if provided, otherwise fallback to 5008
+                var aspnetUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+                if (!string.IsNullOrEmpty(aspnetUrls))
+                {
+                    webBuilder.UseUrls(aspnetUrls);
+                }
+                else
+                {
+                    var portEnv = Environment.GetEnvironmentVariable("WEB_PORT") ?? Environment.GetEnvironmentVariable("PORT") ?? "5008";
+                    if (!int.TryParse(portEnv, out var port)) port = 5008;
+                    var url = $"http://0.0.0.0:{port}";
+                    webBuilder.UseUrls(url);
+                    webBuilder.ConfigureKestrel(options =>
+                    {
+                        options.ListenAnyIP(port);
+                    });
+                }
+
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapGet("/health", async context => await context.Response.WriteAsync("OK"));
+                    });
+                });
+            })
             .ConfigureAppConfiguration((ctx, cfg) =>
             {
                 cfg.SetBasePath(Directory.GetCurrentDirectory())
