@@ -10,7 +10,7 @@ RUN dotnet restore --disable-parallel
 COPY . .
 RUN dotnet publish apiNET8_UploadItemsCosmos.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
